@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Emotional Support Chatbot</title>
+    <!-- Import Tailwind CSS via jsdelivr CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Import Font Awesome for icons -->
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom styles to complement Tailwind */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Background GIF setup */
+        .bg-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-container img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6; /* Adjust opacity for better text visibility */
+        }
+
+        /* Overlay to make text more readable */
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.4);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Landing page styling */
+        .landing-page {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+            transition: all 0.5s ease;
+        }
+
+        /* Chatbot interface styling */
+        .chatbot-container {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+        }
+
+        .chat-header {
+            background-color: rgba(79, 70, 229, 0.9);
+            padding: 1rem;
+            color: white;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+
+        .chat-body {
+            height: calc(100% - 120px);
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 1rem;
+            max-width: 80%;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background-color: #e0e7ff;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+
+        .bot-message {
+            background-color: #f3f4f6;
+            margin-right: auto;
+            border-bottom-left-radius: 0;
+        }
+
+        .chat-input {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+
+        /* Pulse animation for the get started button */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Custom scrollbar */
+        .chat-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-body::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .chat-body::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Typing indicator animation */
+        .typing-indicator {
+            display: flex;
+            padding: 10px;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #6366f1;
+            border-radius: 50%;
+            margin: 0 2px;
+            display: inline-block;
+            animation: typing 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+    <!-- Background GIF container -->
+    <div class="bg-container">
+        <!-- Using a calm, supportive themed GIF background -->
+        <img src="https://victor-palha.com/assets/Chatbot-659a8e95.gif" alt="Background Animation">
+        <div class="overlay"></div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-page px-4">
+        <div class="bg-white bg-opacity-90 p-8 rounded-xl shadow-xl max-w-md mx-auto">
+            <h1 class="text-4xl font-bold text-indigo-600 mb-4">Student Emotional Support</h1>
+            <p class="text-lg text-gray-700 mb-6">
+                Feel free to chat about your concerns, stress, or any challenges you're facing. I'm here to listen and support you.
+            </p>
+            <button id="start-chat" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 pulse">
+                <i class="fas fa-comments mr-2"></i> Get Started
+            </button>
+        </div>
+    </div>
+
+    <!-- Chatbot Interface -->
+    <div id="chatbot-container" class="chatbot-container">
+        <div class="max-w-md mx-auto h-full flex flex-col shadow-2xl">
+            <!-- Chat Header -->
+            <div class="chat-header flex justify-between items-center">
+                <div class="flex items-center">
+                    <i class="fas fa-robot text-2xl mr-3"></i>
+                    <div>
+                        <h3 class="font-bold">EmotionalSupport Bot</h3>
+                        <p class="text-xs opacity-80">Always here to listen</p>
+                    </div>
+                </div>
+                <button id="close-chat" class="bg-indigo-700 hover:bg-indigo-800 rounded-full p-2 transition duration-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Chat Messages Area -->
+            <div id="chat-body" class="chat-body">
+                <!-- Bot welcome message will be added here by JavaScript -->
+            </div>
+            
+            <!-- Chat Input Area -->
+            <div class="chat-input flex items-center">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    class="flex-1 py-2 px-4 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                    placeholder="Type your message here..."
+                >
+                <button 
+                    id="send-btn" 
+                    class="ml-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-2 transition duration-300 focus:outline-none"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const landingPage = document.getElementById('landing-page');
+        const chatbotContainer = document.getElementById('chatbot-container');
+        const startChatBtn = document.getElementById('start-chat');
+        const closeChatBtn = document.getElementById('close-chat');
+        const chatBody = document.getElementById('chat-body');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Emotional support responses based on keywords
+        const responses = {
+            "stress": [
+                "It's completely normal to feel stressed, especially during busy academic periods. What specific stressors are you dealing with right now?",
+                "Stress can be overwhelming. Have you tried any relaxation techniques like deep breathing or short walks?",
+                "I understand that stress can be difficult to manage. Would you like some tips for handling academic pressure?"
+            ],
+            "anxiety": [
+                "Anxiety is something many students experience. Would you like to talk more about what's causing your anxiety?",
+                "I'm sorry you're feeling anxious. Sometimes breaking down big challenges into smaller steps can help reduce anxiety. Would that be useful?",
+                "Anxiety can be really challenging. Have you considered speaking with your school's counseling services?"
+            ],
+            "depression": [
+                "I'm truly sorry to hear you're feeling this way. Depression is serious, and it might be helpful to talk to a mental health professional. Your school likely has resources available.",
+                "Thank you for sharing that with me. Remember that you don't have to face these feelings alone. Would you like information about support resources?",
+                "I appreciate you opening up about this. Depression can make everything feel more difficult. Have you been able to maintain any daily routines?"
+            ],
+            "overwhelmed": [
+                "Feeling overwhelmed is common, especially when balancing multiple responsibilities. Would it help to prioritize your tasks together?",
+                "It's okay to feel overwhelmed sometimes. Taking small breaks and practicing self-care can make a big difference. What do you usually do to relax?",
+                "When things get overwhelming, sometimes just talking about it can help. Would you like to share what's contributing to these feelings?"
+            ],
+            "lonely": [
+                "College can sometimes feel isolating despite being surrounded by people. Have you considered joining any clubs or study groups that align with your interests?",
+                "Feeling lonely is a common experience. Would you like to talk about ways to connect with others on campus?",
+                "I'm sorry you're feeling lonely. Remember that many others feel the same way, even if they don't show it. Would you like some suggestions for making connections?"
+            ],
+            "tired": [
+                "Being tired can affect everything from mood to academic performance. How has your sleep schedule been lately?",
+                "Feeling constantly tired might be your body telling you something. Are you taking breaks and getting enough rest?",
+                "Academic demands can be exhausting. Have you been able to maintain a balance between work and rest?"
+            ],
+            "exam": [
+                "Exams can be stressful! Have you created a study schedule that includes breaks?",
+                "Test anxiety is very common. Some students find that practice tests help build confidence. Have you tried that approach?",
+                "Remember that one exam doesn't define your worth or abilities. Have you tried any relaxation techniques before studying?"
+            ],
+            "failed": [
+                "Setbacks and failures are part of the learning process. What do you think you could learn from this experience?",
+                "I'm sorry to hear that. A setback doesn't define your future success. Would you like to talk about what happened?",
+                "Many successful people have faced failures on their journey. Could this be an opportunity to approach things differently next time?"
+            ],
+            "help": [
+                "I'm here to help! What specific support are you looking for today?",
+                "I'd be happy to help. Could you tell me more about what you're going through?",
+                "Reaching out for help is a sign of strength. What kind of assistance would be most helpful right now?"
+            ]
+        };
+
+        // Default responses when no keywords match
+        const defaultResponses = [
+            "I'm here to listen. Could you tell me more about how you're feeling?",
+            "Thank you for sharing that with me. How has this been affecting your daily life?",
+            "I appreciate you opening up. Is there anything specific you'd like support with today?",
+            "That sounds challenging. What have you tried so far to address this?",
+            "I'm here to support you. Would you like to explore some strategies that might help?"
+        ];
+
+        // Function to display messages in the chat
+        function addMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
+            messageDiv.textContent = message;
+            chatBody.appendChild(messageDiv);
+            chatBody.scrollTop = chatBody.scrollHeight; // Auto-scroll to latest message
+        }
+
+        // Function to display typing indicator
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing-indicator', 'bot-message');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatBody.appendChild(typingDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // Function to remove typing indicator
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Function to get bot response based on user input
+        function getBotResponse(userText) {
+            const lowercaseText = userText.toLowerCase();
+            
+            // Check for keywords in the user's message
+            for (const keyword in responses) {
+                if (lowercaseText.includes(keyword)) {
+                    const responseArray = responses[keyword];
+                    return responseArray[Math.floor(Math.random() * responseArray.length)];
+                }
+            }
+            
+            // If no keywords match, use a default response
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        // Function to handle sending a message
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            userInput.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Simulate bot "thinking" time then respond
+            setTimeout(() => {
+                removeTypingIndicator();
+                const botResponse = getBotResponse(message);
+                addMessage(botResponse, 'bot');
+            }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
+        }
+
+        // Event Listeners
+        startChatBtn.addEventListener('click', () => {
+            landingPage.style.display = 'none';
+            chatbotContainer.style.display = 'block';
+            
+            // Add welcome message
+            addMessage("Hi there! I'm your emotional support chatbot. How are you feeling today?", 'bot');
+        });
+
+        closeChatBtn.addEventListener('click', () => {
+            chatbotContainer.style.display = 'none';
+            landingPage.style.display = 'flex';
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Focus the input when chat opens
+        chatbotContainer.addEventListener('transitionend', () => {
+            if (chatbotContainer.style.display === 'block') {
+                userInput.focus();
+            }
+        });
+
+        // Ensure the page is fully responsive
+        window.addEventListener('resize', () => {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        });
+    </script>
+</body>
+</html>
